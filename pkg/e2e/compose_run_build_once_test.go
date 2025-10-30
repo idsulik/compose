@@ -17,9 +17,6 @@
 package e2e
 
 import (
-	"crypto/rand"
-	"encoding/hex"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -35,11 +32,11 @@ func TestRunBuildOnce(t *testing.T) {
 	c := NewParallelCLI(t)
 
 	t.Run("dependency with pull_policy build is built only once", func(t *testing.T) {
-		projectName := randomProjectName("build-once")
+		projectName := "e2e-run-build-once-single"
 		res := c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once.yaml", "down", "--rmi", "local", "--remove-orphans")
 		res.Assert(t, icmd.Success)
 
-		res = c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once.yaml", "run", "--build", "--rm", "curl")
+		res = c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once.yaml", "run", "--rm", "curl")
 		res.Assert(t, icmd.Success)
 
 		// Count how many times nginx was built by looking for its unique RUN command output
@@ -53,11 +50,11 @@ func TestRunBuildOnce(t *testing.T) {
 	})
 
 	t.Run("nested dependencies build only once each", func(t *testing.T) {
-		projectName := randomProjectName("build-nested")
+		projectName := "e2e-run-build-once-nested"
 		res := c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-nested.yaml", "down", "--rmi", "local", "--remove-orphans")
 		res.Assert(t, icmd.Success)
 
-		res = c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-nested.yaml", "run", "--build", "--rm", "app")
+		res = c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-nested.yaml", "run", "--rm", "app")
 		res.Assert(t, icmd.Success)
 
 		output := res.Combined()
@@ -76,11 +73,11 @@ func TestRunBuildOnce(t *testing.T) {
 	})
 
 	t.Run("service with no dependencies builds once", func(t *testing.T) {
-		projectName := randomProjectName("build-simple")
+		projectName := "e2e-run-build-once-no-deps"
 		res := c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-no-deps.yaml", "down", "--rmi", "local", "--remove-orphans")
 		res.Assert(t, icmd.Success)
 
-		res = c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-no-deps.yaml", "run", "--build", "--rm", "simple")
+		res = c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-no-deps.yaml", "run", "--rm", "simple")
 		res.Assert(t, icmd.Success)
 
 		// Should build exactly once
@@ -90,12 +87,4 @@ func TestRunBuildOnce(t *testing.T) {
 
 		c.RunDockerComposeCmd(t, "-p", projectName, "-f", "./fixtures/run-test/build-once-no-deps.yaml", "down", "--remove-orphans")
 	})
-}
-
-// randomProjectName generates a unique project name for parallel test execution
-// Format: prefix-<8 random hex chars> (e.g., "build-once-3f4a9b2c")
-func randomProjectName(prefix string) string {
-	b := make([]byte, 4) // 4 bytes = 8 hex chars
-	rand.Read(b)         //nolint:errcheck
-	return fmt.Sprintf("%s-%s", prefix, hex.EncodeToString(b))
 }
